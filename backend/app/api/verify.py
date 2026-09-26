@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from app.core.models import ProjectSelection
+from app.storage import repository
 from app.verification.verification_pipeline import run_config_verification
 
 
@@ -58,6 +59,8 @@ def trigger_verification(project: ProjectSelection) -> JSONResponse:
         env_path=".env.example",
         env_content=env_path.read_text(encoding="utf-8"),
     )
+
+    repository.replace_contracts(result.contracts)
 
     return JSONResponse(
         status_code=200,

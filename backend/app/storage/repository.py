@@ -19,6 +19,13 @@ def get_contract(contract_id: str) -> Optional[DocumentationContract]:
     return db.get_contract(contract_id)
 
 
+
+def replace_contracts(
+    contracts: List[DocumentationContract],
+) -> None:
+    """Replace current contracts with freshly verified results."""
+    db.replace_contracts(contracts)
+
 def approve_contract(contract_id: str) -> Optional[DocumentationContract]:
     return db.update_contract(contract_id, approvalStatus="approved", approved=True)
 

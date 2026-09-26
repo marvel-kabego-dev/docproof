@@ -229,6 +229,40 @@ def test_verify_local_sample_repo_returns_completed_results():
     assert contracts["JWT_SECRET required"]["actual"] == "JWT_SECRET missing"
 
 
+def test_verify_local_sample_repo_persists_verified_contracts():
+    sample_repo = Path(__file__).resolve().parents[2] / "sample_repo"
+
+    payload = {
+        "repository": str(sample_repo),
+        "branch": "main",
+        "documentation": ["README.md"],
+    }
+
+    verify_response = client.post("/verify", json=payload)
+
+    assert verify_response.status_code == 200
+
+    contracts_response = client.get("/contracts")
+
+    assert contracts_response.status_code == 200
+
+    contracts = contracts_response.json()
+
+    assert len(contracts) == 4
+
+    assert {contract["id"] for contract in contracts} == {
+        "config-001",
+        "config-002",
+        "config-003",
+        "config-004",
+    }
+
+    assert "DP-001" not in {
+        contract["id"]
+        for contract in contracts
+    }
+
+
 # ---------------------------------------------------------------------------
 # POST /approve/{id}
 # ---------------------------------------------------------------------------

@@ -235,6 +235,16 @@ def reset() -> None:
     _contracts = {c.id: c.model_copy(deep=True) for c in _SEED}
 
 
+
+def replace_contracts(contracts: List[DocumentationContract]) -> None:
+    """Replace the runtime store with freshly verified contracts."""
+    global _contracts
+
+    _contracts = {
+        contract.id: contract.model_copy(deep=True)
+        for contract in contracts
+    }
+
 def all_contracts() -> List[DocumentationContract]:
     return list(_contracts.values())
 
