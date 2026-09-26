@@ -8,6 +8,9 @@ Implementation requirements this file encodes:
   - store.reset() must restore the full original seed dataset, not just clear it.
   - POST /approve/{id} and POST /reject/{id} return the updated DocumentationContract.
 """
+
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -136,13 +139,13 @@ def test_get_contract_dp001_reverified_field():
 def test_get_contract_dp001_optional_evidence_field_names():
     """Frontend expects camelCase evidence field names, never snake_case."""
     body = client.get("/contracts/DP-001").json()
-    # evidenceFile
+
     assert "evidenceFile" in body
     assert "evidence_file" not in body
-    # evidenceLines
+
     assert "evidenceLines" in body
     assert "evidence_lines" not in body
-    # evidenceSnippet
+
     assert "evidenceSnippet" in body
     assert "evidence_snippet" not in body
 
@@ -162,7 +165,9 @@ def test_verify_valid_payload_returns_202():
         "branch": "main",
         "documentation": ["README.md"],
     }
+
     r = client.post("/verify", json=payload)
+
     assert r.status_code == 202
 
 
@@ -172,13 +177,56 @@ def test_verify_returns_queued_status():
         "branch": "main",
         "documentation": ["README.md"],
     }
+
     r = client.post("/verify", json=payload)
+
     assert r.json()["status"] == "verification_queued"
 
 
 def test_verify_missing_body_returns_422():
     r = client.post("/verify", json={})
+
     assert r.status_code == 422
+
+
+def test_verify_local_sample_repo_returns_completed_results():
+    sample_repo = Path(__file__).resolve().parents[2] / "sample_repo"
+
+    payload = {
+        "repository": str(sample_repo),
+        "branch": "main",
+        "documentation": ["README.md"],
+    }
+
+    r = client.post("/verify", json=payload)
+
+    assert r.status_code == 200
+
+    body = r.json()
+
+    assert body["status"] == "completed"
+    assert body["trust_score"] == 75.0
+
+    assert body["summary"] == {
+        "total": 4,
+        "passed": 3,
+        "failed": 1,
+        "warnings": 0,
+    }
+
+    assert len(body["contracts"]) == 4
+
+    contracts = {
+        contract["expected"]: contract
+        for contract in body["contracts"]
+    }
+
+    assert contracts["PORT=3000"]["status"] == "pass"
+    assert contracts["DEBUG=false"]["status"] == "pass"
+    assert contracts["DATABASE_URL required"]["status"] == "pass"
+
+    assert contracts["JWT_SECRET required"]["status"] == "fail"
+    assert contracts["JWT_SECRET required"]["actual"] == "JWT_SECRET missing"
 
 
 # ---------------------------------------------------------------------------
@@ -187,34 +235,41 @@ def test_verify_missing_body_returns_422():
 
 def test_approve_dp001_returns_200():
     r = client.post("/approve/DP-001")
+
     assert r.status_code == 200
 
 
 def test_approve_dp001_sets_approvalStatus():
     body = client.post("/approve/DP-001").json()
+
     assert body["approvalStatus"] == "approved"
 
 
 def test_approve_dp001_sets_approved_true():
     body = client.post("/approve/DP-001").json()
+
     assert body["approved"] is True
 
 
 def test_approve_returns_full_contract():
     """Endpoint must return the full updated DocumentationContract, not just a status."""
     body = client.post("/approve/DP-001").json()
+
     assert body["id"] == "DP-001"
     assert body["status"] == "fail"
 
 
 def test_approve_not_found_returns_404():
     r = client.post("/approve/NONEXISTENT")
+
     assert r.status_code == 404
 
 
 def test_approve_persists_across_requests():
     client.post("/approve/DP-001")
+
     body = client.get("/contracts/DP-001").json()
+
     assert body["approvalStatus"] == "approved"
     assert body["approved"] is True
 
@@ -225,40 +280,48 @@ def test_approve_persists_across_requests():
 
 def test_reject_dp001_returns_200():
     r = client.post("/reject/DP-001")
+
     assert r.status_code == 200
 
 
 def test_reject_dp001_sets_approvalStatus():
     body = client.post("/reject/DP-001").json()
+
     assert body["approvalStatus"] == "rejected"
 
 
 def test_reject_dp001_sets_approved_false():
     body = client.post("/reject/DP-001").json()
+
     assert body["approved"] is False
 
 
 def test_reject_returns_full_contract():
     """Endpoint must return the full updated DocumentationContract, not just a status."""
     body = client.post("/reject/DP-001").json()
+
     assert body["id"] == "DP-001"
     assert body["status"] == "fail"
 
 
 def test_reject_not_found_returns_404():
     r = client.post("/reject/NONEXISTENT")
+
     assert r.status_code == 404
 
 
 def test_reject_persists_across_requests():
     client.post("/reject/DP-001")
+
     body = client.get("/contracts/DP-001").json()
+
     assert body["approvalStatus"] == "rejected"
 
 
 def test_approve_then_reject_is_independent():
     """store.reset() in the fixture means this test always starts fresh."""
     body = client.post("/reject/DP-001").json()
+
     assert body["approvalStatus"] == "rejected"
 
 
@@ -268,25 +331,30 @@ def test_approve_then_reject_is_independent():
 
 def test_trust_score_returns_200():
     r = client.get("/trust-score")
+
     assert r.status_code == 200
 
 
 def test_trust_score_has_score_key():
     body = client.get("/trust-score").json()
+
     assert "score" in body
 
 
 def test_trust_score_is_numeric():
     score = client.get("/trust-score").json()["score"]
+
     assert isinstance(score, (int, float))
 
 
 def test_trust_score_within_range():
     score = client.get("/trust-score").json()["score"]
+
     assert 0.0 <= score <= 100.0
 
 
 def test_trust_score_reflects_seed_data():
-    """Seed mix of pass/fail/warning → score must be strictly between 0 and 100."""
+    """Seed mix of pass/fail/warning -> score must be strictly between 0 and 100."""
     score = client.get("/trust-score").json()["score"]
+
     assert 0.0 < score < 100.0
