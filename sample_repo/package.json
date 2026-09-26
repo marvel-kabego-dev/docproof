@@ -1,0 +1,20 @@
+{
+  "name": "sample-project",
+  "version": "1.0.0",
+  "description": "Sample project used by DocProof for runtime verification testing.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
