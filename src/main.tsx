@@ -1,0 +1,19 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import { ContractsProvider } from './context/ContractsContext';
+import { ToastProvider } from './context/ToastContext';
+import './styles/globals.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <ContractsProvider>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </ContractsProvider>
+    </BrowserRouter>
+  </StrictMode>,
+);
