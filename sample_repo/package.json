@@ -1,0 +1,16 @@
+{
+  "name": "widget-service",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "test": "node --test src/app.test.js",
+    "build": "echo 'no build step'"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
